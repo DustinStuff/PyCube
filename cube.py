@@ -100,6 +100,23 @@ class Edge:
 
 class Cube:
     def __init__(self):
+        """
+        ...
+        """
+        """
+        Facet definitions on unwrapped cube:
+        X  X  X   X  X  X   1  2  3   X  X  X
+        X  X  X   X  X  X   4  U  5   X  X  X
+        X  X  X   X  X  X   6  7  8   X  X  X
+
+       41 42 43   9 10 11  17 18 19  25 26 27
+       44 B  45  12 L  13  20 F  21  28 R  29
+       46 47 48  14 15 16  22 23 24  30 31 32
+
+        X  X  X   X  X  X  33 34 35   X  X  X
+        X  X  X   X  X  X  36 D  37   X  X  X
+        X  X  X   X  X  X  38 39 40   X  X  X
+        """
         self.cube_dict = {
             "edges": {
                 # Up
@@ -111,7 +128,7 @@ class Cube:
                 "FL": Edge([20, 13]),
                 "FR": Edge([21, 28]),
                 # Back
-                "BL": Edge([42, 12]),
+                "BL": Edge([45, 12]),
                 "BR": Edge([44, 29]),
                 # Down
                 "DB": Edge([39, 47]),
@@ -133,6 +150,68 @@ class Cube:
             }
         }
 
+    def move(self, movement: str):
+        c = CubeMovement(self, movement)
+        c.move()
+
+    def swap(self, piece1, piece2):
+        corners = self.cube_dict["corners"]
+        edges = self.cube_dict["edges"]
+        if piece1 in corners.keys() and piece2 in corners.keys():
+            temp = corners[piece1]
+            corners[piece1] = corners[piece2]
+            corners[piece2] = temp
+        elif piece1 in edges.keys() and piece2 in edges.keys():
+            temp = edges[piece1]
+            edges[piece1] = edges[piece2]
+            edges[piece2] = temp
+        else:
+            raise ValueError("Pieces must be either edges or corners.")
+
+class CubeMovement:
+
+    class Move(Enum):
+        UP, LEFT, FRONT, RIGHT, DOWN, BACK = range(6)
+
+    def __init__(self, cube: Cube, movement: str):
+        self.cube = cube
+        self.inverted = False
+        if movement[-1] == "'":  # Move inverted
+           self.movement = movement[:-1]  # Removes ' symbol
+           self.inverted = True
+        if movement.lower() in ["u", "up"]:
+            self.movement = CubeMovement.Move.UP
+        elif movement.lower() in ["d", "down"]:
+            self.movement = CubeMovement.Move.DOWN
+        elif movement.lower() in ["l", "left"]:
+            self.movement = CubeMovement.Move.LEFT
+        elif movement.lower() in ["r", "right"]:
+            self.movement = CubeMovement.Move.RIGHT
+        elif movement.lower() in ["f", "front"]:
+            self.movement = CubeMovement.Move.FRONT
+        elif movement.lower() in ["b", "back"]:
+            self.movement = CubeMovement.Move.BACK
+
+    def move(self):
+        if self.movement == CubeMovement.Move.UP:
+            self.move_up()
+        elif self.movement == CubeMovement.Move.DOWN:
+            self.move_down()
+        elif self.movement == CubeMovement.Move.LEFT:
+            self.move_left()
+        elif self.movement == CubeMovement.Move.RIGHT:
+            self.move_right()
+        elif self.movement == CubeMovement.Move.FRONT:
+            self.move_front()
+        elif self.movement == CubeMovement.Move.BACK:
+            self.move_back()
+
+    def move_up(self):
+        if self.inverted:
+            pass
+        else:
+
+            pass
 
 def get_color(subfacet: int) -> Color:
     # Each face has 8 subfacets (excluding centers)
