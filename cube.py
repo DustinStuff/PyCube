@@ -105,118 +105,121 @@ class Cube:
         """
         """
         Facet definitions on unwrapped cube:
-        X  X  X   X  X  X   1  2  3   X  X  X
-        X  X  X   X  X  X   4  U  5   X  X  X
-        X  X  X   X  X  X   6  7  8   X  X  X
+        X  X  X   X  X  X   0  1  2   X  X  X
+        X  X  X   X  X  X   3  U  4   X  X  X
+        X  X  X   X  X  X   5  6  7   X  X  X
 
-       41 42 43   9 10 11  17 18 19  25 26 27
-       44 B  45  12 L  13  20 F  21  28 R  29
-       46 47 48  14 15 16  22 23 24  30 31 32
+       40 41 42   8 9  10  16 17 18  24 25 26
+       43 B  44  11 L  12  19 F  20  27 R  28
+       45 46 47  13 14 15  21 22 23  29 30 31
 
-        X  X  X   X  X  X  33 34 35   X  X  X
-        X  X  X   X  X  X  36 D  37   X  X  X
-        X  X  X   X  X  X  38 39 40   X  X  X
+        X  X  X   X  X  X  32 33 34   X  X  X
+        X  X  X   X  X  X  35 D  36   X  X  X
+        X  X  X   X  X  X  37 38 39   X  X  X
         """
-        self.cube_dict = {
-            "edges": {
-                # Up
-                "UB": Edge([2, 42]),
-                "UL": Edge([4, 10]),
-                "UR": Edge([5, 26]),
-                "UF": Edge([7, 18]),
-                # Front
-                "FL": Edge([20, 13]),
-                "FR": Edge([21, 28]),
-                # Back
-                "BL": Edge([45, 12]),
-                "BR": Edge([44, 29]),
-                # Down
-                "DB": Edge([39, 47]),
-                "DL": Edge([36, 15]),
-                "DR": Edge([37, 31]),
-                "DF": Edge([34, 23])
-            },
-            "corners": {
-                # Up
-                "UBL": Corner([1, 9, 43]),
-                "UBR": Corner([3, 41, 27]),
-                "UFL": Corner([6, 17, 11]),
-                "UFR": Corner([8, 25, 19]),
-                # Down
-                "DBL": Corner([38, 48, 14]),
-                "DBR": Corner([40, 32, 46]),
-                "DFL": Corner([33, 16, 22]),
-                "DFR": Corner([35, 24, 30])
-            }
-        }
+        # self.cube_dict = {
+        #     "edges": {
+        #         # Up
+        #         "UB": Edge([2, 42]),
+        #         "UL": Edge([4, 10]),
+        #         "UR": Edge([5, 26]),
+        #         "UF": Edge([7, 18]),
+        #         # Front
+        #         "FL": Edge([20, 13]),
+        #         "FR": Edge([21, 28]),
+        #         # Back
+        #         "BL": Edge([45, 12]),
+        #         "BR": Edge([44, 29]),
+        #         # Down
+        #         "DB": Edge([39, 47]),
+        #         "DL": Edge([36, 15]),
+        #         "DR": Edge([37, 31]),
+        #         "DF": Edge([34, 23])
+        #     },
+        #     "corners": {
+        #         # Up
+        #         "UBL": Corner([1, 9, 43]),
+        #         "UBR": Corner([3, 41, 27]),
+        #         "UFL": Corner([6, 17, 11]),
+        #         "UFR": Corner([8, 25, 19]),
+        #         # Down
+        #         "DBL": Corner([38, 48, 14]),
+        #         "DBR": Corner([40, 32, 46]),
+        #         "DFL": Corner([33, 16, 22]),
+        #         "DFR": Corner([35, 24, 30])
+        #     }
+        # }
 
-    def move(self, movement: str):
-        c = CubeMovement(self, movement)
-        c.move()
+        self.facet_list = list(range(48))  # Each item represents a facet
+        # Locations can be referred to by a normal range(48)
 
-    def swap(self, piece1, piece2):
-        corners = self.cube_dict["corners"]
-        edges = self.cube_dict["edges"]
-        if piece1 in corners.keys() and piece2 in corners.keys():
-            temp = corners[piece1]
-            corners[piece1] = corners[piece2]
-            corners[piece2] = temp
-        elif piece1 in edges.keys() and piece2 in edges.keys():
-            temp = edges[piece1]
-            edges[piece1] = edges[piece2]
-            edges[piece2] = temp
-        else:
-            raise ValueError("Pieces must be either edges or corners.")
+    def swap(self, location1: int, location2: int, *args) -> None:
+        # Swaps two pieces. If more than 2 pieces, shifts the pieces right (e.g., swap(A, B, C), A to B, B to C, C to A)
+        cycle = [location1, location2]
+        cycle = cycle + list(args)
+        # Error checking:
+        for i in cycle:
+            # TODO: Are these numbers too magic?
+            try:
+                if not 0 <= i <= 47 or type(i) != int:
+                    raise TypeError("Error in term {}: Expected int, received {}".format(i, type(i)))
+            except TypeError:
+                raise TypeError("Error in term {}: Expected int, received {}".format(i, type(i)))
+        if len(cycle) != len(set(cycle)):  # Duplicate checking
+            raise ValueError("Swaps cannot have duplicate items")
+
+        temp = -1
+        pos1 = cycle[0]  # just swaps with first element
+        for i in range(len(cycle) - 1):  # Only need n-1 loops since we'll be adding 1 to i
+            pos2 = cycle[i+1]
+            temp_value = self.facet_list[pos2]
+            self.facet_list[pos2] = self.facet_list[pos1]
+            self.facet_list[pos1] = temp_value
+
+
+    # def swap(self, piece1, piece2):
+    #     corners = self.cube_dict["corners"]
+    #     edges = self.cube_dict["edges"]
+    #     if piece1 in corners.keys() and piece2 in corners.keys():
+    #         temp = corners[piece1]
+    #         corners[piece1] = corners[piece2]
+    #         corners[piece2] = temp
+    #     elif piece1 in edges.keys() and piece2 in edges.keys():
+    #         temp = edges[piece1]
+    #         edges[piece1] = edges[piece2]
+    #         edges[piece2] = temp
+    #     else:
+    #         raise ValueError("Pieces must be either edges or corners.")
+
 
 class CubeMovement:
-
-    class Move(Enum):
-        UP, LEFT, FRONT, RIGHT, DOWN, BACK = range(6)
-
-    def __init__(self, cube: Cube, movement: str):
-        self.cube = cube
+    def __init__(self, movement: str):
         self.inverted = False
-        if movement[-1] == "'":  # Move inverted
-           self.movement = movement[:-1]  # Removes ' symbol
-           self.inverted = True
-        if movement.lower() in ["u", "up"]:
-            self.movement = CubeMovement.Move.UP
-        elif movement.lower() in ["d", "down"]:
-            self.movement = CubeMovement.Move.DOWN
-        elif movement.lower() in ["l", "left"]:
-            self.movement = CubeMovement.Move.LEFT
-        elif movement.lower() in ["r", "right"]:
-            self.movement = CubeMovement.Move.RIGHT
-        elif movement.lower() in ["f", "front"]:
-            self.movement = CubeMovement.Move.FRONT
-        elif movement.lower() in ["b", "back"]:
-            self.movement = CubeMovement.Move.BACK
+        self.double = False
+        self.move = ""
 
-    def move(self):
-        if self.movement == CubeMovement.Move.UP:
-            self.move_up()
-        elif self.movement == CubeMovement.Move.DOWN:
-            self.move_down()
-        elif self.movement == CubeMovement.Move.LEFT:
-            self.move_left()
-        elif self.movement == CubeMovement.Move.RIGHT:
-            self.move_right()
-        elif self.movement == CubeMovement.Move.FRONT:
-            self.move_front()
-        elif self.movement == CubeMovement.Move.BACK:
-            self.move_back()
+        if len(movement) > 2:
+            raise ValueError("Invalid movement, only one move supported")
 
-    def move_up(self):
-        if self.inverted:
-            pass
-        else:
+        move = list(movement)[0]
+        if move not in list("UDFBLRXYZ"):
+            raise ValueError("Error resolving movement")
 
-            pass
+        if len(movement) == 2:
+            mod = list(movement)[-1]
+            if mod == "'":
+                self.inverted = True
+            elif mod == "2":
+                self.double = True
+            else:
+                raise ValueError("Invalid second character, "'" and "2" supported')
+
+        self.move = movement
+
 
 def get_color(subfacet: int) -> Color:
     # Each face has 8 subfacets (excluding centers)
-    # Floor dividing a subfacet (subtracted by 1) by 8 and adding 1 gives the face it belongs to
+    # Floor dividing a subfacet by 8 and adding 1 gives the face it belongs to
     # For example, the color of subfacet 36 can be found like this:
-    # (36 - 1) // 8 + 1 == 5, so the color of 36 is the color of the 5th face (default yellow)
-    subfacet -= 1  # Corrects off-by-one error (facets not zero indexed)
+    # 36 // 8 + 1 == 5, so the color of 36 is the color of the 5th face (default yellow)
     return Color(subfacet // 8 + 1)
