@@ -168,14 +168,12 @@ class Cube:
         if len(cycle) != len(set(cycle)):  # Duplicate checking
             raise ValueError("Swaps cannot have duplicate items")
 
-        temp = -1
         pos1 = cycle[0]  # just swaps with first element
         for i in range(len(cycle) - 1):  # Only need n-1 loops since we'll be adding 1 to i
             pos2 = cycle[i+1]
             temp_value = self.facet_list[pos2]
             self.facet_list[pos2] = self.facet_list[pos1]
             self.facet_list[pos1] = temp_value
-
 
     # def swap(self, piece1, piece2):
     #     corners = self.cube_dict["corners"]
@@ -190,6 +188,61 @@ class Cube:
     #         edges[piece2] = temp
     #     else:
     #         raise ValueError("Pieces must be either edges or corners.")
+
+    def move(self, movement):
+        movement_ = 0
+        if type(movement) == str:
+            movement_ = CubeMovement(movement)
+        elif type(movement) == CubeMovement:
+            movement_ = movement
+        else:
+            raise TypeError("Invalid type {}, expected 'str' or 'CubeMovement'".format(type(movement)))
+
+        m = movement_.move[0]
+        inverted = movement_.inverted
+        double = movement_.double
+
+        swap_list = dict()
+        swap_list["U"] = [[1, 4, 6, 3],  # U edges
+                       [0, 2, 7, 5],  # U corners
+                       [17, 9, 41, 25],   # U side edges
+                       [16, 8, 40, 24],   # U side corners #1
+                       [18, 10, 42, 26]]  # U side corners #2
+        swap_list["D"] = [[33, 36, 38, 35],  # D edges
+                       [32, 34, 39, 37],  # D corners
+                       [22, 30, 46, 14],  # D side edges
+                       [13, 21, 29, 45],  # D side corners #1
+                       [47, 15, 23, 31]]  # D side corners #2
+        swap_list["L"] = [[9, 12, 14, 11],  # etc
+                       [8, 10, 15, 13],
+                       [3, 19, 35, 44],
+                       [0, 16, 32, 47],
+                       [5, 21, 37, 42]]
+        swap_list["R"] = [[25, 28, 30, 27],  # etc
+                       [24, 26, 31, 29],
+                       [4, 43, 36, 20],
+                       [7, 40, 39, 23],
+                       [2, 45, 34, 18]]
+        swap_list["F"] = [[17, 20, 22, 19],  # etc
+                       [16, 18, 21, 23],
+                       [6, 27, 33, 12],
+                       [5, 24, 34, 15],
+                       [7, 29, 32, 10]]
+        swap_list["B"] = [[41, 44, 46, 43],  # etc
+                          [40, 42, 47, 45],
+                          [1, 11, 38, 28],
+                          [2, 8, 37, 31],
+                          [0, 13, 39, 26]]
+
+        swap_face = swap_list[m]
+        if inverted:
+            for list in swap_face:
+                list.reverse()
+
+        for list in swap_face:
+            self.swap(*list)
+            if double:
+                self.swap(*list)
 
 
 class CubeMovement:
@@ -223,3 +276,18 @@ def get_color(subfacet: int) -> Color:
     # For example, the color of subfacet 36 can be found like this:
     # 36 // 8 + 1 == 5, so the color of 36 is the color of the 5th face (default yellow)
     return Color(subfacet // 8 + 1)
+
+def print_face(cube: Cube):
+    st = ["UP", "LEFT", "FRONT", "RIGHT", "DOWN", "BACK"]
+    sides = 6
+    for i in range(sides):
+        face = []
+        face = cube.facet_list[i * 8:i * 8 + 8]
+        print("{}:".format(st[i]))
+        print("{} {} {}\n{} A {}\n{} {} {}".format(*face))
+
+
+if __name__ == '__main__':
+    cb = Cube()
+    cb.move("R2")
+    print_face(cb)

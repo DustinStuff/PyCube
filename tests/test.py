@@ -28,6 +28,7 @@ class TestCubePieces(unittest.TestCase):
         self.assertEqual(cube.get_color(39), cube.Color.YELLOW)
         self.assertEqual(cube.get_color(3), cube.Color.WHITE)
 
+
 class TestPieceSwap(unittest.TestCase):
     def setUp(self) -> None:
         self.cube = cube.Cube()
