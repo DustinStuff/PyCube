@@ -153,16 +153,19 @@ class Cube:
         self.facet_list = list(range(48))  # Each item represents a facet
         # Locations can be referred to by a normal range(48)
 
+    def __eq__(self, other):
+        return self.facet_list == other.facet_list
+
     def swap(self, location1: int, location2: int, *args) -> None:
-        # Swaps two pieces. If more than 2 pieces, shifts the pieces right (e.g., swap(A, B, C), A to B, B to C, C to A)
+        # Swaps two facets. If more than 2 facets, shifts them right (e.g., swap(A, B, C), A to B, B to C, C to A)
         cycle = [location1, location2]
         cycle = cycle + list(args)
         # Error checking:
         for i in cycle:
-            # TODO: Are these numbers too magic?
             try:
+                # TODO: Are these numbers too magic?
                 if not 0 <= i <= 47 or type(i) != int:
-                    raise TypeError("Error in term {}: Expected int, received {}".format(i, type(i)))
+                    raise TypeError
             except TypeError:
                 raise TypeError("Error in term {}: Expected int, received {}".format(i, type(i)))
         if len(cycle) != len(set(cycle)):  # Duplicate checking
@@ -189,7 +192,7 @@ class Cube:
     #     else:
     #         raise ValueError("Pieces must be either edges or corners.")
 
-    def move(self, movement):
+    def move(self, movement, reverse=False):
         movement_ = 0
         if type(movement) == str:
             movement_ = CubeMovement(movement)
@@ -204,30 +207,30 @@ class Cube:
 
         swap_list = dict()
         swap_list["U"] = [[1, 4, 6, 3],  # U edges
-                       [0, 2, 7, 5],  # U corners
-                       [17, 9, 41, 25],   # U side edges
-                       [16, 8, 40, 24],   # U side corners #1
-                       [18, 10, 42, 26]]  # U side corners #2
+                          [0, 2, 7, 5],  # U corners
+                          [17, 9, 41, 25],   # U side edges
+                          [16, 8, 40, 24],   # U side corners #1
+                          [18, 10, 42, 26]]  # U side corners #2
         swap_list["D"] = [[33, 36, 38, 35],  # D edges
-                       [32, 34, 39, 37],  # D corners
-                       [22, 30, 46, 14],  # D side edges
-                       [13, 21, 29, 45],  # D side corners #1
-                       [47, 15, 23, 31]]  # D side corners #2
+                          [32, 34, 39, 37],  # D corners
+                          [22, 30, 46, 14],  # D side edges
+                          [13, 21, 29, 45],  # D side corners #1
+                          [47, 15, 23, 31]]  # D side corners #2
         swap_list["L"] = [[9, 12, 14, 11],  # etc
-                       [8, 10, 15, 13],
-                       [3, 19, 35, 44],
-                       [0, 16, 32, 47],
-                       [5, 21, 37, 42]]
+                          [8, 10, 15, 13],
+                          [3, 19, 35, 44],
+                          [0, 16, 32, 47],
+                          [5, 21, 37, 42]]
         swap_list["R"] = [[25, 28, 30, 27],  # etc
-                       [24, 26, 31, 29],
-                       [4, 43, 36, 20],
-                       [7, 40, 39, 23],
-                       [2, 45, 34, 18]]
+                          [24, 26, 31, 29],
+                          [4, 43, 36, 20],
+                          [7, 40, 39, 23],
+                          [2, 45, 34, 18]]
         swap_list["F"] = [[17, 20, 22, 19],  # etc
-                       [16, 18, 21, 23],
-                       [6, 27, 33, 12],
-                       [5, 24, 34, 15],
-                       [7, 29, 32, 10]]
+                          [16, 18, 21, 23],
+                          [6, 27, 33, 12],
+                          [5, 24, 34, 15],
+                          [7, 29, 32, 10]]
         swap_list["B"] = [[41, 44, 46, 43],  # etc
                           [40, 42, 47, 45],
                           [1, 11, 38, 28],
@@ -235,14 +238,15 @@ class Cube:
                           [0, 13, 39, 26]]
 
         swap_face = swap_list[m]
+        inverted = inverted ^ reverse  # If reverse=True, do the opposite of what inverted is.
         if inverted:
-            for list in swap_face:
-                list.reverse()
+            for list_ in swap_face:
+                list_.reverse()
 
-        for list in swap_face:
-            self.swap(*list)
+        for list_ in swap_face:
+            self.swap(*list_)
             if double:
-                self.swap(*list)
+                self.swap(*list_)
 
 
 class CubeMovement:
@@ -269,6 +273,68 @@ class CubeMovement:
 
         self.move = movement
 
+    def __repr__(self):
+        return "<Move: {}>".format(self.move)
+
+    def __str__(self):
+        return self.move
+
+
+class Algorithm:
+    def __init__(self, algorithm_string, cube):
+        self._string = algorithm_string  # Valid algorithms are space-delimited, e.g., "R' U R U'"
+        self._cube = cube
+        self._step = 0
+
+        self.string = ""
+        self.algorithm = []
+        self.set_algorithm(self._string)
+
+    def __str__(self):
+        return self.string
+
+    def set_algorithm(self, string):
+        str_list = string.split(" ")
+        for s in str_list:
+            try:
+                self.algorithm.append(CubeMovement(s))
+            except ValueError as e:
+                self.algorithm = []  # We want this to be empty if it fails at making the alg
+                raise ValueError(e)
+
+        self.string = self._string = " ".join(str_list)
+
+    def execute(self):
+        for move in self.algorithm:
+            self.step()
+        print_face(self._cube)
+
+    def get_step(self):
+        return self._step
+
+    def step(self):
+        if self._step >= len(self.algorithm):
+            return  # Can't go forward any more  TODO: Should this be an exception?
+        current_step = self.algorithm[self._step]
+        self._cube.move(current_step)
+        self._step += 1
+
+    def step_back(self):
+        if self._step <= 0:
+            return  # Can't go back any more  TODO: Should this be an exception?
+        self._step -= 1
+        current_step = self.algorithm[self._step]
+        self._cube.move(current_step, reverse=True)
+
+    def is_executing(self):
+        if 0 < self._step < len(self.algorithm):
+            return True
+        return False
+
+    def is_finished(self):
+        # Only available when stepping through algorithm, execute() resets to 0
+        return self._step >= len(self.algorithm)
+
 
 def get_color(subfacet: int) -> Color:
     # Each face has 8 subfacets (excluding centers)
@@ -276,6 +342,7 @@ def get_color(subfacet: int) -> Color:
     # For example, the color of subfacet 36 can be found like this:
     # 36 // 8 + 1 == 5, so the color of 36 is the color of the 5th face (default yellow)
     return Color(subfacet // 8 + 1)
+
 
 def print_face(cube: Cube):
     st = ["UP", "LEFT", "FRONT", "RIGHT", "DOWN", "BACK"]
@@ -288,6 +355,10 @@ def print_face(cube: Cube):
 
 
 if __name__ == '__main__':
-    cb = Cube()
-    cb.move("R2")
-    print_face(cb)
+    # R2 = CubeMovement("R2")
+    # cb = Cube()
+    # cb.move(R2)
+    # print_face(cb)
+    c = Cube()
+    a = Algorithm("R U R' U R U2 R'", c)
+    print_face(c)
