@@ -22,11 +22,49 @@ class TestCubePieces(unittest.TestCase):
         # Green = back
 
         # Tests some random and error-prone facets.
-        self.assertEqual(cube.get_color(20), cube.Color.BLUE)
-        self.assertEqual(cube.get_color(41), cube.Color.GREEN)
-        self.assertEqual(cube.get_color(47), cube.Color.GREEN)
-        self.assertEqual(cube.get_color(39), cube.Color.YELLOW)
-        self.assertEqual(cube.get_color(3), cube.Color.WHITE)
+        self.assertEqual(cube.Util.get_color(20), cube.Color.BLUE)
+        self.assertEqual(cube.Util.get_color(41), cube.Color.GREEN)
+        self.assertEqual(cube.Util.get_color(47), cube.Color.GREEN)
+        self.assertEqual(cube.Util.get_color(39), cube.Color.YELLOW)
+        self.assertEqual(cube.Util.get_color(3), cube.Color.WHITE)
+
+
+class TestCubeFunctionality(unittest.TestCase):
+    def setUp(self):
+        self.cube = cube.Cube()
+
+    def test_swap(self):
+        test_cube = cube.Cube()
+        test_cube.facet_list[0] = 1
+        test_cube.facet_list[1] = 0
+        self.cube.swap(0, 1)
+        self.assertEqual(test_cube, self.cube)
+
+    def test_get_edge_at_key(self):
+        key = 4
+        test_edge = cube.Edge((4, 25))
+        edge = self.cube.get_edge_at_key(key)
+        self.assertEqual(test_edge, edge)
+
+        self.cube.swap(4, 25)
+        edge = self.cube.get_edge_at_key(key)
+        self.assertNotEqual(test_edge, edge)
+
+    def test_get_corner_at_key(self):
+        pass  # TODO: Write this one
+
+    def test_get_swapped_edge_at_key(self):
+        key = 4
+        test_edge = cube.Edge((25, 4))
+        self.cube.swap(4, 25)
+        edge = self.cube.get_edge_at_key(key)
+        self.assertEqual(test_edge, edge)
+
+        self.cube.swap(4, 25)
+        edge = self.cube.get_edge_at_key(key)
+        self.assertNotEqual(test_edge, edge)
+
+
 
 
 class TestPieceSwap(unittest.TestCase):
@@ -132,6 +170,64 @@ class TestAlgorithmClass(unittest.TestCase):
         self.assertTrue(self.cube == test_cube)
         self.assertTrue(self.alg.is_finished())
 
+
+class TestSolvabilityClass(unittest.TestCase):
+    def setUp(self) -> None:
+        self.cube = cube.Cube()
+        self.solve_check = cube.SolvabilityChecker(self.cube)
+
+    def test_facet_list_correct_no_duplicates(self):
+        self.cube.move("R2")
+        self.assertTrue(self.solve_check.has_correct_unique_facets())
+        self.cube.swap(1, 2)  # Impossible case, but should still pass this test
+        self.assertTrue(self.solve_check.has_correct_unique_facets())
+        self.cube.facet_list[1] = 5
+        self.assertFalse(self.solve_check.has_correct_unique_facets())
+
+    def test_has_correct_edges(self):
+        self.cube.move("R2")
+        self.assertTrue(self.solve_check.has_correct_edges())
+        self.cube.swap(4, 25)  # Unsolvable case, but should still pass this test
+        self.assertTrue(self.solve_check.has_correct_edges())
+        self.cube.swap(4, 1)
+        self.assertFalse(self.solve_check.has_correct_edges())
+        self.cube.swap(4, 1)  # Swap edge back to true case
+        self.cube.swap(0, 2)  # Swaps corners, should pass
+        self.assertTrue(self.solve_check.has_correct_edges())
+
+    def test_has_correct_corners(self):
+        self.cube.move("R2")
+        self.cube.move("L")
+        self.assertTrue(self.solve_check.has_correct_corners())
+        self.cube.swap(13, 37, 47)  # Unsolvable, but still should pass
+        self.assertTrue(self.solve_check.has_correct_corners())
+        self.cube.swap(13, 37)  # leet. should fail.
+        self.assertFalse(self.solve_check.has_correct_corners())
+        self.cube.swap(13, 37)
+        self.cube.swap(12, 14)  # Swaps edges, should pass
+        self.assertTrue(self.solve_check.has_correct_corners())
+
+    def test_has_orientable_edges(self):
+        self.assertTrue(self.solve_check.has_orientable_edges())
+        self.cube.move("R")
+        self.assertTrue(self.solve_check.has_orientable_edges())
+        self.cube.move("F")
+        self.assertTrue(self.solve_check.has_orientable_edges())
+
+        self.cube.swap(4, 25)
+        self.assertFalse(self.solve_check.has_orientable_edges())
+        self.cube.swap(6, 17)
+        self.assertTrue(self.solve_check.has_orientable_edges())
+
+    def test_has_orientable_corners(self):
+        #self.assertTrue(self.solve_check.has_orientable_corners())
+        #self.assertTrue(self.solve_check.has_orientable_corners())
+        self.cube.move("R")
+        self.cube.move("F")
+        self.cube.swap(5, 16, 10)
+        self.assertFalse(self.solve_check.has_orientable_corners())
+        self.cube.swap(0, 42, 8)
+        self.assertTrue(self.solve_check.has_orientable_corners())
 
 if __name__ == '__main__':
     unittest.main()

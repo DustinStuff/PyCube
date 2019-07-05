@@ -15,6 +15,11 @@ class Corner:
     def __init__(self, corner):
         self._corner = deque(corner)
 
+    def __getitem__(self, item):
+        if 0 <= item <= 2:
+            return self._corner[item]
+        raise IndexError  # For for-loop terminating
+
     def is_mirrored(self, corner):
         return corner == self.mirrored()
 
@@ -77,6 +82,9 @@ class Corner:
     def __eq__(self, other):
         return self._corner == other._corner
 
+    def __repr__(self):
+        return "<Corner {}, {}, {}>".format(self._corner[0], self._corner[1], self._corner[2])
+
     def __str__(self):
         return str(list(self._corner))
 
@@ -85,11 +93,19 @@ class Edge:
     def __init__(self, edge):
         self._edge = list(edge)
 
+    def __getitem__(self, item):
+        if 0 <= item <= 1:
+            return self._edge[item]
+        raise IndexError  # For for-loop terminating
+
     def rotate(self):
         self._edge = list(reversed(self._edge))
 
     def rotated(self):
         return Edge(list(reversed(self._edge)))
+
+    def __repr__(self):
+        return "<Edge {}, {}>".format(*self._edge)
 
     def __str__(self):
         return str(self._edge)
@@ -227,7 +243,7 @@ class Cube:
                           [7, 40, 39, 23],
                           [2, 45, 34, 18]]
         swap_list["F"] = [[17, 20, 22, 19],  # etc
-                          [16, 18, 21, 23],
+                          [16, 18, 23, 21],
                           [6, 27, 33, 12],
                           [5, 24, 34, 15],
                           [7, 29, 32, 10]]
@@ -247,6 +263,63 @@ class Cube:
             self.swap(*list_)
             if double:
                 self.swap(*list_)
+
+    @staticmethod
+    def edge_keys():
+        return [1, 3, 4, 6, 19, 20, 33, 35, 36, 38, 43, 44]
+
+    @staticmethod
+    def corner_keys():
+        return [0, 2, 5, 7, 32, 34, 37, 39]
+
+    @staticmethod
+    def default_corners():
+        corner_list = [(0, 8, 42), (2, 40, 26), (5, 16, 10), (7, 24, 18),
+                       (32, 15, 21), (34, 23, 29), (37, 47, 13), (39, 31, 45)]
+        c_ = list()
+        for corner in corner_list:
+            c_.append(Corner(corner))
+
+        return c_
+
+    @staticmethod
+    def default_edges():
+        edge_list = [(1, 41), (3, 9), (4, 25), (6, 17),
+                     (19, 12), (20, 27), (33, 22), (35, 14),
+                     (36, 30), (38, 46), (43, 28), (44, 11)]
+
+        c_ = list()
+        for edge in edge_list:
+            c_.append(Edge(edge))
+
+        return c_
+
+    def get_corners(self):
+        c_ = list()
+        for key in self.corner_keys():
+            c_.append(self.get_corner_at_key(key))
+        return c_
+
+    def get_edges(self):
+        c_ = list()
+        for key in self.edge_keys():
+            c_.append(self.get_edge_at_key(key))
+        return c_
+
+    def get_edge_at_key(self, position):
+        # See enumerated cube diagram for edge keys and edges connected to them
+        for key, other in self.default_edges():
+            if key == position:
+                return Edge([self.facet_list[key], self.facet_list[other]])
+        raise ValueError("Invalid key '{}'. 'position' must be a valid key.".format(position))
+
+    def get_corner_at_key(self, position):
+        # See enumerated cube diagram for edge keys and edges connected to them
+        # Order is the key piece followed by other pieces in clockwise direction
+        for key, o1, o2 in self.default_corners():
+            if key == position:
+                return Corner([self.facet_list[key], self.facet_list[o1], self.facet_list[o2]])
+        raise ValueError("Invalid key '{}'. 'position' must be a valid key.".format(position))
 
 
 class CubeMovement:
@@ -307,7 +380,6 @@ class Algorithm:
     def execute(self):
         for move in self.algorithm:
             self.step()
-        print_face(self._cube)
 
     def get_step(self):
         return self._step
@@ -336,22 +408,92 @@ class Algorithm:
         return self._step >= len(self.algorithm)
 
 
-def get_color(subfacet: int) -> Color:
-    # Each face has 8 subfacets (excluding centers)
-    # Floor dividing a subfacet by 8 and adding 1 gives the face it belongs to
-    # For example, the color of subfacet 36 can be found like this:
-    # 36 // 8 + 1 == 5, so the color of 36 is the color of the 5th face (default yellow)
-    return Color(subfacet // 8 + 1)
+class SolvabilityChecker:
+    def __init__(self, cube):
+        self._cube = cube
+        pass
+
+    def has_correct_unique_facets(self):
+        if sorted(self._cube.facet_list) == list(range(48)):
+            return True
+        return False
+
+    def has_correct_edges(self):
+        edges = self._cube.get_edges()
+        default_edges = self._cube.default_edges()
+        edges_correct = True
+        for edge in edges:
+            if edge not in default_edges and edge.rotated() not in default_edges:
+                edges_correct = False
+        return edges_correct
+
+    def has_correct_corners(self):
+        corners = self._cube.get_corners()
+        default_corners = self._cube.default_corners()
+        corners_correct = True
+        for corner in corners:
+            if corner not in default_corners \
+              and corner.rotated(1) not in default_corners \
+              and corner.rotated(2) not in default_corners:
+                corners_correct = False
+        return corners_correct
+
+    def has_orientable_edges(self):
+        edges = self._cube.get_edges()
+        edge_keys = self._cube.edge_keys()
+
+        counter = 0
+        for edge in edges:
+            # If the edge orientation of a piece is correct
+            if edge[0] in edge_keys:
+                counter += 1
+        # A cube's edges can only be legally oriented in pairs, so if there is one flipped edge on
+        # the cube there must always be another.
+        # Therefore, solvable cubes will always have their number of flipped pieces divisible by 2.
+        return counter % 2 == 0
+
+    def has_orientable_corners(self):
+        corners = self._cube.get_corners()
+        corner_keys = self._cube.corner_keys()
+
+        counter = 0
+        for corner in corners:
+            if corner[0] in corner_keys:
+                pass
+            if corner.rotated(1)[0] in corner_keys:
+                counter -= 1
+            if corner.rotated(2)[0] in corner_keys:
+                counter += 1
+        # Corners have 3 rotations. A backwards rotation of one piece cancels a forward rotation of another.
+        # If two pieces are rotated forward, a third piece rotated backward twice cancels them out. Since there
+        # are only three rotations, two backwards rotations counts as one forward rotation. Therefore, three
+        # forward rotations cancels itself out. And thus rotations must be divisible by 3 to be orientable.
+        return counter % 3 == 0
+
+    def has_permutable_edges(self):
+        pass
+
+    def has_permutable_corners(self):
+        pass
 
 
-def print_face(cube: Cube):
-    st = ["UP", "LEFT", "FRONT", "RIGHT", "DOWN", "BACK"]
-    sides = 6
-    for i in range(sides):
-        face = []
-        face = cube.facet_list[i * 8:i * 8 + 8]
-        print("{}:".format(st[i]))
-        print("{} {} {}\n{} A {}\n{} {} {}".format(*face))
+class Util:
+    @staticmethod
+    def get_color(subfacet: int) -> Color:
+        # Each face has 8 subfacets (excluding centers)
+        # Floor dividing a subfacet by 8 and adding 1 gives the face it belongs to
+        # For example, the color of subfacet 36 can be found like this:
+        # 36 // 8 + 1 == 5, so the color of 36 is the color of the 5th face (default yellow)
+        return Color(subfacet // 8 + 1)
+
+    @staticmethod
+    def print_face(cube: Cube):
+        st = ["UP", "LEFT", "FRONT", "RIGHT", "DOWN", "BACK"]
+        sides = 6
+        for i in range(sides):
+            face = cube.facet_list[i * 8:i * 8 + 8]
+            print("{}:".format(st[i]))
+            print("{} {} {}\n{} A {}\n{} {} {}".format(*face))
 
 
 if __name__ == '__main__':
@@ -361,4 +503,15 @@ if __name__ == '__main__':
     # print_face(cb)
     c = Cube()
     a = Algorithm("R U R' U R U2 R'", c)
-    print_face(c)
+    a.execute()
+    a.execute()
+    #c.move("F")
+    c.move("L")
+    c.move("R")
+    #c.swap(6, 17)
+    #print(c.get_edges())
+    #print(c.get_edge_at_key(6))
+    #Util.print_face(c)
+    sc = SolvabilityChecker(c)
+    print(sc.has_orientable_edges())
+    print(sc.has_orientable_corners())
