@@ -321,6 +321,20 @@ class Cube:
                 return Corner([self.facet_list[key], self.facet_list[o1], self.facet_list[o2]])
         raise ValueError("Invalid key '{}'. 'position' must be a valid key.".format(position))
 
+    def key_from_piece(self, piece):
+        if type(piece) is Edge:
+            if piece[0] in self.edge_keys():
+                return piece[0]
+            if piece[1] in self.edge_keys():
+                return piece[1]
+        if type(piece) is Corner:
+            if piece[0] in self.corner_keys():
+                return piece[0]
+            if piece[1] in self.corner_keys():
+                return piece[1]
+            if piece[2] in self.corner_keys():
+                return piece[2]
+        raise ValueError("Invalid piece: no valid key in piece. {}".format(piece))
 
 class CubeMovement:
     def __init__(self, movement: str):
@@ -409,7 +423,7 @@ class Algorithm:
 
 
 class SolvabilityChecker:
-    def __init__(self, cube):
+    def __init__(self, cube=Cube()):
         self._cube = cube
         pass
 
@@ -467,15 +481,48 @@ class SolvabilityChecker:
         # Corners have 3 rotations. A backwards rotation of one piece cancels a forward rotation of another.
         # If two pieces are rotated forward, a third piece rotated backward twice cancels them out. Since there
         # are only three rotations, two backwards rotations counts as one forward rotation. Therefore, three
-        # forward rotations cancels itself out. And thus rotations must be divisible by 3 to be orientable.
+        # forward rotations cancels itself out. Thus rotations must be divisible by 3 to be orientable.
         return counter % 3 == 0
 
     def has_permutable_edges(self):
         pass
 
     def has_permutable_corners(self):
-        pass
+        # Step 1: get a list of all corner cycles
+        # A cycle is the list of piece swaps it takes to get back to the starting piece
+        # E.g., if position A has piece B in it, find what's in position B. Continue until
+        # a piece comes into position A. E.g., a cycle would be something like A->B->C->A
+        keys_list = []
 
+        def cycle(starting_key):
+            swaps = 0
+            start_key = starting_key
+            next_key = -1  # Init value
+            while next_key != start_key:
+                current_key = next_key if next_key != -1 else starting_key
+                piece = self._cube.get_corner_at_key(current_key)
+                next_key = self._cube.key_from_piece(piece)
+                keys_list.append(current_key)  # Ruins function purity, but whatever
+                swaps += 1
+
+            return swaps
+
+        swaps_list = []
+        max_length = 8  # 8 corners
+        while len(keys_list) < max_length:
+            s = list(set(self._cube.corner_keys()) - set(keys_list))
+            swaps_list.append(cycle(s[0]))
+            print(swaps_list)
+
+        # Step 2: Truncate odd number cycles from swaps list
+        # Odd number cycles are solvable (or solved in case of 1s), so we
+        # need to get rid of them.
+        swaps_list = [x for x in swaps_list if x % 2 == 0]
+
+        # Step 3: Count even swaps
+        # There must be an even number of even swaps for a cube's corners to be permutable.
+        # So if swaps_list = [2, 2] it is permutable, but if it is [2] it is not.
+        return len(swaps_list) % 2 == 0
 
 class Util:
     @staticmethod
@@ -503,15 +550,13 @@ if __name__ == '__main__':
     # print_face(cb)
     c = Cube()
     a = Algorithm("R U R' U R U2 R'", c)
-    a.execute()
-    a.execute()
-    #c.move("F")
-    c.move("L")
-    c.move("R")
+    #a.execute()
+    #c.move("U")
     #c.swap(6, 17)
     #print(c.get_edges())
     #print(c.get_edge_at_key(6))
     #Util.print_face(c)
     sc = SolvabilityChecker(c)
-    print(sc.has_orientable_edges())
-    print(sc.has_orientable_corners())
+    #print(sc.has_orientable_edges())
+    #print(sc.has_orientable_corners())
+    print(sc.has_permutable_corners())
