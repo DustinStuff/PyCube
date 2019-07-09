@@ -131,38 +131,6 @@ class Cube:
         X  X  X   X  X  X  35 D  36   X  X  X
         X  X  X   X  X  X  37 38 39   X  X  X
         """
-        # self.cube_dict = {
-        #     "edges": {
-        #         # Up
-        #         "UB": Edge([2, 42]),
-        #         "UL": Edge([4, 10]),
-        #         "UR": Edge([5, 26]),
-        #         "UF": Edge([7, 18]),
-        #         # Front
-        #         "FL": Edge([20, 13]),
-        #         "FR": Edge([21, 28]),
-        #         # Back
-        #         "BL": Edge([45, 12]),
-        #         "BR": Edge([44, 29]),
-        #         # Down
-        #         "DB": Edge([39, 47]),
-        #         "DL": Edge([36, 15]),
-        #         "DR": Edge([37, 31]),
-        #         "DF": Edge([34, 23])
-        #     },
-        #     "corners": {
-        #         # Up
-        #         "UBL": Corner([1, 9, 43]),
-        #         "UBR": Corner([3, 41, 27]),
-        #         "UFL": Corner([6, 17, 11]),
-        #         "UFR": Corner([8, 25, 19]),
-        #         # Down
-        #         "DBL": Corner([38, 48, 14]),
-        #         "DBR": Corner([40, 32, 46]),
-        #         "DFL": Corner([33, 16, 22]),
-        #         "DFR": Corner([35, 24, 30])
-        #     }
-        # }
 
         self.facet_list = list(range(48))  # Each item represents a facet
         # Locations can be referred to by a normal range(48)
@@ -192,19 +160,6 @@ class Cube:
             self.facet_list[pos2] = self.facet_list[pos1]
             self.facet_list[pos1] = temp_value
 
-    # def swap(self, piece1, piece2):
-    #     corners = self.cube_dict["corners"]
-    #     edges = self.cube_dict["edges"]
-    #     if piece1 in corners.keys() and piece2 in corners.keys():
-    #         temp = corners[piece1]
-    #         corners[piece1] = corners[piece2]
-    #         corners[piece2] = temp
-    #     elif piece1 in edges.keys() and piece2 in edges.keys():
-    #         temp = edges[piece1]
-    #         edges[piece1] = edges[piece2]
-    #         edges[piece2] = temp
-    #     else:
-    #         raise ValueError("Pieces must be either edges or corners.")
 
     def move(self, movement, reverse=False):
         movement_ = 0
@@ -318,6 +273,9 @@ class Cube:
             if key == position:
                 return Corner([self.facet_list[key], self.facet_list[o1], self.facet_list[o2]])
         raise ValueError("Invalid key '{}'. 'position' must be a valid key.".format(position))
+
+    def get_piece_at_key(self, position):
+        pass  # TODO: FINISH THIS
 
     def key_from_piece(self, piece):
         if type(piece) is Edge:
